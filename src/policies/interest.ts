@@ -18,6 +18,7 @@ import {
   type MinorUnits,
 } from "../types.js";
 
+/** One day's interest calculation result (before capitalization). */
 export interface DailyAccrual {
   readonly accountId: AccountId;
   readonly day: Day;
@@ -26,8 +27,11 @@ export interface DailyAccrual {
 }
 
 /**
- * Compute per-day accruals from final closes (after OD fees).
- * Does not append — caller capitalizes the sum.
+ * Computes per-day accruals from final closes (after OD fees).
+ * Does not append — caller capitalizes the sum so Day-6 close is not circular.
+ *
+ * @param ledger - Ledger after user events + fees (before interest credit)
+ * @returns Flat list of per-account, per-day accrual rows
  */
 export function computeDailyAccruals(ledger: Ledger): DailyAccrual[] {
   const accruals: DailyAccrual[] = [];
@@ -53,7 +57,13 @@ export function computeDailyAccruals(ledger: Ledger): DailyAccrual[] {
   return accruals;
 }
 
-/** Sum rounded dailies per account and append one Day-6 credit when non-zero. */
+/**
+ * Sums rounded dailies per account and appends one Day-6 credit when non-zero.
+ * By construction capitalized total === Σ rounded accruals (no discarded remainder).
+ *
+ * @param ledger - Append target for capitalization credits
+ * @param accruals - Output of {@link computeDailyAccruals}
+ */
 export function capitalizeInterest(ledger: Ledger, accruals: DailyAccrual[]): void {
   const totals = new Map<AccountId, MinorUnits>();
   for (const a of accruals) {

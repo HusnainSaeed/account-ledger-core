@@ -1,10 +1,10 @@
 /**
  * Overdraft fee policy.
- * Once per account per day when that day's closing ledger (value_date <= day)
- * is negative. Fee is booked with value_date = the day assessed (the negative day).
+ * Once per account per day when that day's closing ledger (`value_date <= day`)
+ * is negative. Fee is booked with `value_date` = the day assessed (the negative day).
  *
- * After backdated posts we re-scan all days up to the horizon: a single debit
- * can make multiple historical days negative (E7 → Day 2 and Day 4).
+ * After backdated posts we re-scan days up to the horizon: one debit can make
+ * multiple historical days negative (E7 → Day 2 and Day 4).
  */
 
 import type { AuthorizationStore } from "../authorizations.js";
@@ -18,14 +18,14 @@ import {
 } from "../types.js";
 
 /**
- * Balance used to decide "is this day negative?" must exclude that day's own
- * OD fee so we do not double-assess. We compute gross close then subtract any
- * OD fee already present for that day (equivalent: sum non-fee + other entries).
- */
-/**
- * Balance used to decide "is this day negative?" must exclude *that day's*
- * own OD fee so we do not double-assess. Earlier days' fees remain — they
- * correctly change later closes (Day-2 fee flows into Day-4).
+ * Closing balance used for the negativity test, excluding *this day's* own OD fee
+ * so we do not double-assess. Earlier days' fees remain — they correctly change
+ * later closes (Day-2 fee flows into Day-4).
+ *
+ * @param ledger - Ledger including any already-booked fees
+ * @param accountId - Account under review
+ * @param day - Candidate fee day
+ * @returns Pre-fee closing minor units for `day`
  */
 function closingBeforeOdFee(ledger: Ledger, accountId: AccountId, day: Day): bigint {
   const closing = ledger.balanceAsOf(accountId, day);
@@ -37,9 +37,13 @@ function closingBeforeOdFee(ledger: Ledger, accountId: AccountId, day: Day): big
 }
 
 /**
- * Assess any missing OD fees for days 1..throughDay.
+ * Assesses any missing OD fees for days 1..`throughDay`.
  * Loops until stable because booking a Day-2 fee changes later closes.
  * Only AED accounts receive the AED 25 fee per the brief.
+ *
+ * @param ledger - Append target for new fee rows
+ * @param _auths - Reserved for future available/fee coupling; unused today
+ * @param throughDay - Highest day to evaluate (usually event `bookedOn`)
  */
 export function assessOverdraftFees(
   ledger: Ledger,

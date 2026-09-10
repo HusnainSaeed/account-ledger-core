@@ -1,11 +1,13 @@
 /**
  * Assessment event stream E1–E10 in mandatory replay order.
  * Amounts are minor units (AED scale 2, BHD scale 3).
+ * Note: E10 is booked Day 5 but appears after E9 (Day 6) — stream order wins.
  */
 
 import { parseMinor } from "./money.js";
 import type { StreamEvent } from "./types.js";
 
+/** Fixed fixture events for the assessment replay. */
 export const EVENT_STREAM: readonly StreamEvent[] = [
   {
     id: "E1",

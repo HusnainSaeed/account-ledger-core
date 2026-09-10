@@ -1,6 +1,6 @@
 /**
- * Apply a single stream event. Exhaustive switch keeps new event kinds
- * as compile-time failures (never check in default).
+ * Applies a single stream event.
+ * Exhaustive `switch` + `never` default: new event kinds fail at compile time.
  */
 
 import { splitEqualWithRemainderOnLast } from "./money.js";
@@ -9,6 +9,13 @@ import type { Ledger } from "./ledger.js";
 import { assessOverdraftFees } from "./policies/overdraft.js";
 import { type Day, type StreamEvent } from "./types.js";
 
+/**
+ * Narrows a number to the assessment window day type.
+ *
+ * @param n - Candidate day
+ * @returns Day 1..6
+ * @throws If outside the window
+ */
 function asDay(n: number): Day {
   if (n < 1 || n > 6) {
     throw new Error(`Day out of window: ${n}`);
@@ -16,6 +23,14 @@ function asDay(n: number): Day {
   return n as Day;
 }
 
+/**
+ * Applies one user/system stream event to ledger + auth store.
+ * Money-moving kinds trigger an overdraft re-scan through `event.bookedOn`.
+ *
+ * @param ledger - Append-only money log
+ * @param auths - Holds and error log
+ * @param event - Discriminated stream event (E1–E10 kinds)
+ */
 export function applyEvent(
   ledger: Ledger,
   auths: AuthorizationStore,
@@ -100,7 +115,7 @@ export function applyEvent(
       return;
     }
     case "REVERSAL": {
-      // Append compensating credit; do not mutate the original (append-only).
+      // Append compensating entry; do not mutate the original (append-only).
       // Consequential OD fees are NOT auto-reversed — that is intentional.
       const original = ledger.findById(event.reversesEventId);
       if (!original) {
@@ -150,7 +165,12 @@ export function applyEvent(
   }
 }
 
-/** After the full stream, ensure fees are assessed through the window end. */
+/**
+ * Final OD pass through Day 6 after the full stream (covers any deferred horizon).
+ *
+ * @param ledger - Ledger after all user events
+ * @param auths - Auth store (unused by fee math; kept for call-site symmetry)
+ */
 export function finalizeFees(ledger: Ledger, auths: AuthorizationStore): void {
   assessOverdraftFees(ledger, auths, asDay(6));
 }

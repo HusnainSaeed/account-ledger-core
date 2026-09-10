@@ -1,11 +1,17 @@
 /**
  * Fixed-scale money helpers.
  * Why bigint minor units: IEEE floats cannot represent 0.01 / 0.001 exactly;
- * ledger defenses fail on "where did the fils go?" if we use number.
+ * ledger defenses fail on "where did the fils go?" if we use `number`.
  */
 
 import type { CurrencyCode, MinorUnits } from "./types.js";
 
+/**
+ * Returns the decimal scale fixed by the brief (AED=2, BHD=3).
+ *
+ * @param currency - Account currency code
+ * @returns Number of fractional digits
+ */
 export function scaleFor(currency: CurrencyCode): number {
   switch (currency) {
     case "AED":
@@ -19,7 +25,14 @@ export function scaleFor(currency: CurrencyCode): number {
   }
 }
 
-/** Parse a decimal display string into minor units at the currency's scale. */
+/**
+ * Parses a decimal display string into integer minor units at the currency scale.
+ *
+ * @param display - Human amount, e.g. `"1200.00"` or `"10.000"`
+ * @param currency - Controls allowed fractional digits
+ * @returns Signed minor units (`bigint`)
+ * @throws If the string has more fractional digits than the currency allows
+ */
 export function parseMinor(display: string, currency: CurrencyCode): MinorUnits {
   const scale = scaleFor(currency);
   const negative = display.trim().startsWith("-");
@@ -34,6 +47,13 @@ export function parseMinor(display: string, currency: CurrencyCode): MinorUnits 
   return negative ? -minor : minor;
 }
 
+/**
+ * Formats minor units back to a fixed-scale decimal string for reports/tests.
+ *
+ * @param minor - Signed minor units
+ * @param currency - Controls fractional width
+ * @returns Display string such as `"-370.00"`
+ */
 export function formatMinor(minor: MinorUnits, currency: CurrencyCode): string {
   const scale = scaleFor(currency);
   const negative = minor < 0n;
@@ -45,8 +65,13 @@ export function formatMinor(minor: MinorUnits, currency: CurrencyCode): string {
 }
 
 /**
- * Half-up away from zero for positive interest accruals.
- * balance * num / den, rounded to integer minor units.
+ * Rounds daily interest: `(balance * num / den)` half-up for non-negative balances.
+ * Zero/negative balances accrue nothing (interest is positive-balance only).
+ *
+ * @param balanceMinor - Closing ledger in minor units
+ * @param numerator - Rate numerator (4 for 0.04%)
+ * @param denominator - Rate denominator (10_000)
+ * @returns Accrual in minor units (0 if balance ≤ 0)
  */
 export function roundInterestMinor(
   balanceMinor: MinorUnits,
@@ -56,15 +81,18 @@ export function roundInterestMinor(
   if (balanceMinor <= 0n) {
     return 0n;
   }
-  // (balance * num + den/2) / den  — classic half-up for non-negative values
+  // (balance * num + den/2) / den — classic half-up for non-negative values
   const product = balanceMinor * numerator;
   return (product + denominator / 2n) / denominator;
 }
 
 /**
- * Split total into `parts` equal shares at currency scale.
- * Remainder-on-last: first (parts-1) get floor(total/parts); last gets the rest.
+ * Splits a total into `parts` equal shares at currency scale (remainder-on-last).
  * Why not 3.334×3 for BHD 10.000: that sums to 10.002 and invents money.
+ *
+ * @param totalMinor - Total to distribute (non-negative)
+ * @param parts - Number of instalments (≥ 1)
+ * @returns Array of minor-unit shares that sum exactly to `totalMinor`
  */
 export function splitEqualWithRemainderOnLast(
   totalMinor: MinorUnits,
