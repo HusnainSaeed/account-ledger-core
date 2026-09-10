@@ -48,7 +48,7 @@ export function parseMinor(display: string, currency: CurrencyCode): MinorUnits 
 }
 
 /**
- * Formats minor units back to a fixed-scale decimal string for reports/tests.
+ * Formats minor units back to a fixed-scale decimal string (reports and display).
  *
  * @param minor - Signed minor units
  * @param currency - Controls fractional width

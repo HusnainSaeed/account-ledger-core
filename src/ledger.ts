@@ -82,8 +82,9 @@ export class Ledger {
   }
 
   /**
-   * Balance as of day D ignoring overdraft fees — used to assert
-   * “Day 2 close before any fee is assessed” (−370.00).
+   * Closing balance as of day D excluding overdraft fee rows.
+   * Models the “pre-fee close” used when deciding whether a day is negative
+   * and when stating closes before fee assessment.
    *
    * @param accountId - Account to total
    * @param asOfDay - Inclusive value-date cutoff

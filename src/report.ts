@@ -1,5 +1,5 @@
 /**
- * Human-readable per-day report for the runnable suite / CLI.
+ * Human-readable per-day report for the CLI (`npm run replay`).
  */
 
 import { formatMinor } from "./money.js";

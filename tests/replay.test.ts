@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatMinor, parseMinor } from "../src/money.js";
-import { replay, replayThrough } from "../src/replay.js";
+import { replay } from "../src/replay.js";
+import { replayThrough } from "./helpers/replayThrough.js";
 
 describe("event stream replay", () => {
   it("Day 2 closing at end of Day 5 before fees is AED -370.00", () => {

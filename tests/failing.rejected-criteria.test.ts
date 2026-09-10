@@ -12,7 +12,7 @@
  * Keep it failing; see REJECTED.md.
  */
 import { describe, expect, it } from "vitest";
-import { replayThrough } from "../src/replay.js";
+import { replayThrough } from "./helpers/replayThrough.js";
 
 describe("REJECTED criterion: exactly one OD fee on Day 2 from E7", () => {
   // vitest it.fails: assertion fails against our design → reported as expected failure.
