@@ -22,13 +22,25 @@ Specification gaps found during implementation, and how each was resolved in thi
 
 **Resolution:** Re-scan days 1..`throughDay` after money movements and book a missing fee for **each** negative close (stabilizing loop). E7 makes Day 2 and Day 4 (and Day 5) negative before fees — so multiple fees. See REJECTED.md.
 
-## 4. Settlement amount vs hold amount (Auth-A 185 vs 200)
+## 4. Settlement amount vs hold amount
+
+### 4a. Settle less than hold (Auth-A: 185 vs 200)
 
 **Ambiguity:** Settle 185 against a 200 hold — reduce hold by 185 and leave 15 active, or debit 185 and release the entire hold?
 
 **Resolution:** **Debit settlement amount; release the entire hold** (capture-then-close). Matches common card partial-capture behaviour and treats Auth-A as a completed authorization lifecycle.
 
 **Rejected alternative:** Leave a residual 15 hold — invents an open authorization the stream never settles.
+
+### 4b. Settle greater than hold (not in the event stream)
+
+**Ambiguity:** If settlement exceeds the reserved hold, should the core reject, require an incremental authorization first, or debit the full settle amount anyway?
+
+**Related concern:** If over-settlement were allowed, the excess (`settle − hold`) is unreserved spend. Available would need a fresh check after releasing the hold (or against ledger − other holds) before debiting the excess; insufficient available should surface an error rather than silently overdrawing via settlement.
+
+**Resolution (scope):** The mandatory stream only exercises **settle ≤ hold** (Auth-A). No over-settlement event is specified. This implementation does **not** add a `settle > hold` guard or an excess-available check — implementing either would be inventing product policy beyond the brief.
+
+**Production stance (documented, not coded):** Prefer reject (`SETTLEMENT_EXCEEDS_HOLD`) or require incremental auth to raise the hold, then settle. If a scheme truly allows over-capture, gate the excess on available and error when it would not clear. See also ARCHITECTURE.md cuts.
 
 ## 5. Unknown authorization settlement (Auth-Z)
 

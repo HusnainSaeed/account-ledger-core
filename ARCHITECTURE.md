@@ -45,6 +45,7 @@ Part 1 leaves open-ended holds unimplemented (and Auth-B is rejected by availabl
 | No FX / cross-currency | Accounts are single-currency | Cross-currency auth/settle undefined |
 | No fee cascade on reversal | Append-only honesty; reversal ≠ fee delete | Customer may keep OD fees after correcting debit |
 | No auth expiry/void in code | Stream only settles or leaves open | Stuck holds starve available |
+| No `settle > hold` guard / excess-available check | Stream only shows settle ≤ hold | Over-capture could debit unreserved funds without an error |
 | No double-entry GL | Single-sided account ledger | Cannot prove balance to bank GL |
 | No idempotency keys | Deterministic fixture stream | Duplicate posts on retry |
 | Full-scan balances | Six-day toy window | Latency collapse at volume (§1) |
