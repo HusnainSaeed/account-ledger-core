@@ -1,6 +1,6 @@
 # AMBIGUITIES.md
 
-Ambiguities encountered while implementing, and the resolution we will defend.
+Specification gaps found during implementation, and how each was resolved in this codebase.
 
 ## 1. Stream order vs booking day (E10 after E9)
 
@@ -12,9 +12,9 @@ Ambiguities encountered while implementing, and the resolution we will defend.
 
 ## 2. What “day assessed” means for overdraft `value_date`
 
-**Ambiguity:** Fee is “booked with value_date equal to the day assessed.” Is that the day whose close is negative (Day 2), or the processing day when we noticed (Day 5 for E7)?
+**Ambiguity:** Fee is “booked with value_date equal to the day assessed.” Is that the day whose close is negative (Day 2), or the processing day when the imbalance was detected (Day 5 for E7)?
 
-**Resolution:** `value_date` = the **day whose closing balance is negative** (the economic day). `bookedOn` records when the fee row was appended (the processing horizon). This keeps “once per day per account” keyed to the close being charged.
+**Resolution:** `value_date` = the **day whose closing balance is negative** (the economic day). `bookedOn` records when the fee row was appended (the processing horizon). “Once per day per account” is therefore keyed to the close being charged.
 
 ## 3. Fee re-scan after backdated posts
 
@@ -26,31 +26,31 @@ Ambiguities encountered while implementing, and the resolution we will defend.
 
 **Ambiguity:** Settle 185 against a 200 hold — reduce hold by 185 and leave 15 active, or debit 185 and release the entire hold?
 
-**Resolution:** **Debit settlement amount; release the entire hold** (capture-then-close). Matches common card partial-capture behaviour and the criterion that Auth-A settlement is accepted as a completed auth lifecycle.
+**Resolution:** **Debit settlement amount; release the entire hold** (capture-then-close). Matches common card partial-capture behaviour and treats Auth-A as a completed authorization lifecycle.
 
-**Rejected alternative:** Leave residual 15 hold — invents an open auth the stream never settles.
+**Rejected alternative:** Leave a residual 15 hold — invents an open authorization the stream never settles.
 
 ## 5. Unknown authorization settlement (Auth-Z)
 
 **Ambiguity:** Reject only, or reject and still post a free-standing debit?
 
-**Resolution:** Reject with error; **no ledger debit**. Funds must not leave. Matches the acceptance criterion we accept.
+**Resolution:** Reject with error; **no ledger debit**. Funds must not leave.
 
 ## 6. Does reversing E7 reverse consequential overdraft fees?
 
-**Ambiguity:** “After E9, all balances and fees return to their pre-E7 values.”
+**Ambiguity:** Whether a reversal of the originating debit should also unwind fees that were assessed because of it.
 
-**Resolution:** Reversal appends a compensating entry for E7 only. Fees already appended stay (append-only; no silent delete; no implied fee cascade). Pre-E7 fee count was zero; after E9 fees remain → criterion refused (REJECTED.md).
+**Resolution:** Reversal appends a compensating entry for E7 only. Fees already appended stay (append-only; no silent delete; no implied fee cascade). Pre-E7 fee count was zero; after E9 those fee rows remain → see REJECTED.md.
 
-**Rejected alternative:** Auto-post fee reversals when the originating debit reverses — not stated in non-negotiable rules; would hide the append-only discipline.
+**Rejected alternative:** Auto-post fee reversals when the originating debit reverses — not stated in the non-negotiable rules; would weaken append-only discipline.
 
 ## 7. Auth-B approval after E7 left the ledger negative
 
-**Ambiguity:** After E7, value-dated ledger as of Day 5 is negative (~−155 before fees). The rule says approve auth only if available stays ≥ 0 after the hold. That rejects Auth-B. The stream note “Auth-B is never settled” and the conditional criterion “If Auth-B is approved…” do not require approval.
+**Ambiguity:** After E7, value-dated ledger as of Day 5 is negative. The rule says approve an authorization only if available stays ≥ 0 after the hold. That rejects Auth-B. Notes that “Auth-B is never settled” and the conditional criterion “If Auth-B is approved…” do not require approval.
 
 **Resolution:** Apply the available-balance rule strictly → **Auth-B is rejected** with `AUTH_REJECTED_INSUFFICIENT_AVAILABLE`. Hold semantics (reduces available, not ledger) are still demonstrated by Auth-A while it was active.
 
-**Abandoned approach:** Invent a second “booking balance” that ignores backdates for auth checks — not in the brief; would approve Auth-B only by cheating the stated rule.
+**Abandoned approach:** Invent a second “booking balance” that ignores backdates for auth checks — not in the specification; would approve Auth-B only by bypassing the stated rule.
 
 ## 8. Interest base: before or after overdraft fees?
 
@@ -62,20 +62,20 @@ Ambiguities encountered while implementing, and the resolution we will defend.
 
 **Ambiguity:** Capitalize using closes before or after the capitalization credit itself?
 
-**Resolution:** Compute all daily accruals from the ledger **after** user events + OD fees, **then** append one capitalization credit per account. Day-6 accrual therefore does not include the capitalization row (avoids circularity). Capitalized total := sum of rounded dailies.
+**Resolution:** Compute all daily accruals from the ledger **after** user events + OD fees, **then** append one capitalization credit per account. Day-6 accrual therefore does not include the capitalization row. Capitalized total := sum of rounded dailies.
 
 ## 10. BHD instalment equal split
 
 **Ambiguity:** “Three equal instalments” of 10.000 at 3 dp cannot be three identical amounts.
 
-**Resolution:** Remainder-on-last → 3.333 + 3.333 + 3.334. Refuse “each must be 3.334.”
+**Resolution:** Remainder-on-last → 3.333 + 3.333 + 3.334. See REJECTED.md for the refused “each must be 3.334” claim.
 
 ## 11. Available balance “as of” which day during auth?
 
 **Ambiguity:** `bookedOn` vs `valueDate` of the authorization.
 
-**Resolution:** Use ledger `balanceAsOf(bookedOn)` minus active holds — auth decision is made on the booking day in stream time.
+**Resolution:** Use ledger `balanceAsOf(bookedOn)` minus active holds — the authorization decision is made on the booking day in stream time.
 
-## 12. In-memory concurrency
+## 12. Concurrency
 
-**Ambiguity:** None in-scope; single-threaded replay. Noted as a cut in ARCHITECTURE.md.
+**Ambiguity:** None in scope; single-threaded replay. Called out as a deliberate cut in ARCHITECTURE.md.

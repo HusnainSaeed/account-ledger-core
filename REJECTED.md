@@ -1,6 +1,6 @@
 # REJECTED.md
 
-Acceptance criteria we refuse, with reasons. Also approaches abandoned mid-build.
+Acceptance criteria refused by this implementation, with reasons. Also approaches abandoned during the build.
 
 ## Refused criteria
 
@@ -17,13 +17,13 @@ E7 posts AED −620 with `value_date` Day 2. Recomputed closes *before fees*:
 | 4 | −155.00 |
 | 5 | −155.00 |
 
-The non-negotiable rule fees **each** day whose closing ledger is negative (once per day). Day 2 is not alone — Day 4 and Day 5 also qualify when E7 is applied on Day 5. Our implementation books multiple OD fees. Encoded as the intentional failing test in `tests/failing.rejected-criteria.test.ts`.
+The non-negotiable rule assesses a fee for **each** day whose closing ledger is negative (once per day). Day 2 is not alone — Day 4 and Day 5 also qualify when E7 is applied on Day 5. This implementation books multiple OD fees. See `tests/failing.rejected-criteria.test.ts`, which encodes the refused claim as an expected failure (`it.fails`).
 
 ### 2. “After E9, all balances and fees return to their pre-E7 values.”
 
 **Refused.**
 
-E9 appends a reversal of E7 (append-only). It does **not** delete or reverse overdraft fees that were assessed because E7 made historical days negative. Pre-E7 there were **zero** OD fees; after E9 those fee rows remain. Saying “fees return” requires either mutation/deletion or an unstated fee-cascade — both contradict append-only / stated rules.
+E9 appends a reversal of E7 (append-only). It does **not** delete or reverse overdraft fees that were assessed because E7 made historical days negative. Pre-E7 there were **zero** OD fees; after E9 those fee rows remain. Claiming “fees return” requires mutation/deletion or an unstated fee cascade — both conflict with append-only behaviour and the stated rules.
 
 ### 3. “The three BHD instalments in E10 must each be BHD 3.334.”
 
@@ -35,20 +35,20 @@ E9 appends a reversal of E7 (append-only). It does **not** delete or reverse ove
 
 **Refused.**
 
-Non-negotiable rule: rounded daily accruals **must sum exactly** to the capitalized total. Discarding a remainder violates that. Our capitalization credit **is** the sum of the rounded dailies (by construction).
+Non-negotiable rule: rounded daily accruals **must sum exactly** to the capitalized total. Discarding a remainder violates that. The capitalization credit **is** the sum of the rounded dailies (by construction).
 
 ---
 
-## Criteria we accept (for clarity)
+## Criteria accepted
 
 - Day 2 closing at end of Day 5 **before fees** = AED −370.00 → `1200 − 950 − 620`.
 - Day 4 Auth-A settlement accepted.
 - Settlement of unknown auth id rejected; funds do not leave.
 - An approved hold reduces available, not ledger (shown with Auth-A; Auth-B is rejected under the available ≥ 0 rule after E7 — see AMBIGUITIES.md §7).
 
-## Approaches abandoned mid-build
+## Approaches abandoned during the build
 
-1. **Discard interest remainder / adjust last day ad-hoc** — abandoned because it conflicts with exact sum = capitalization; replaced by “capitalized := Σ rounded dailies.”
-2. **Ignore backdates when checking available for Auth-B** — abandoned; would approve Auth-B only by inventing a second balance type not in the brief.
-3. **Auto-reverse OD fees when E9 posts** — abandoned; not in rules and weakens append-only honesty.
-4. **Reorder stream by `bookedOn`** — abandoned; violates mandatory E1→E10 order (E10 after E9).
+1. **Discard interest remainder / adjust last day ad-hoc** — conflicts with exact sum = capitalization; replaced by “capitalized := Σ rounded dailies.”
+2. **Ignore backdates when checking available for Auth-B** — would approve Auth-B only by inventing a second balance type not in the specification.
+3. **Auto-reverse OD fees when E9 posts** — not in the rules; weakens append-only honesty.
+4. **Reorder stream by `bookedOn`** — violates mandatory E1→E10 order (E10 after E9).

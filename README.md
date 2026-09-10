@@ -5,7 +5,6 @@ In-memory account ledger (TypeScript). No web layer, no database, no UI.
 ## Setup
 
 ```bash
-cd ~/Documents/account-ledger-core
 npm install
 ```
 
@@ -15,7 +14,7 @@ npm install
 npm test
 ```
 
-This runs Vitest: money helpers, full event replay assertions, and one **intentionally failing** acceptance criterion encoded with `it.fails` (see `tests/failing.rejected-criteria.test.ts` and `REJECTED.md`).
+Vitest covers money helpers, full event replay assertions, and one annotated test that encodes a refused acceptance criterion via `it.fails` (see `tests/failing.rejected-criteria.test.ts` and `REJECTED.md`).
 
 ## Print the day report
 
@@ -29,26 +28,16 @@ Output is per Day 1–6: closing ledger balances, overdraft fees, authorization 
 
 - **closing ledger** — sum of money entries with `value_date ≤ day` (holds excluded)
 - **available** — printed when holds remain active (ledger − active holds)
-- **overdraft fee** — AED 25.00 once per negative closing day, `value_date` = that day
+- **overdraft fee** — AED 25.00 once per negative closing day; `value_date` = that day
 - **ERROR** — rejected operations (e.g. settlement of unknown Auth-Z)
 - **Interest capitalization** — single Day-6 credit equal to the sum of rounded daily accruals
 
-## Git (local)
-
-History was committed as 11 intact commits. If `git status` fails in this folder, attach history once:
-
-```bash
-zsh scripts/init-git.sh
-```
-
-(Cursor’s sandbox blocked writing `.git` under Documents; the script copies `/tmp/account-ledger-core.git` into place.)
-
-## Docs
+## Documentation
 
 | File | Purpose |
 |------|---------|
-| `NUMBERS.md` | Constants and why those values |
-| `AMBIGUITIES.md` | Ambiguities found and resolutions |
-| `REJECTED.md` | False acceptance criteria refused |
-| `ARCHITECTURE.md` | Part 2 trade-offs |
+| `NUMBERS.md` | Constants and rationale |
+| `AMBIGUITIES.md` | Specification gaps and resolutions |
+| `REJECTED.md` | Refused acceptance criteria and abandoned approaches |
+| `ARCHITECTURE.md` | Part 2 trade-offs and production considerations |
 | `WORKLOG.md` | Timestamped work log |

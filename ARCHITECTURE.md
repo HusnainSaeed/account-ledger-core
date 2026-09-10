@@ -1,6 +1,6 @@
 # ARCHITECTURE.md
 
-Architecture decisions, trade-offs, and production considerations arising from this ledger implementation. Does not restate the assessment event stream or Part 1 rule text.
+Architecture decisions, trade-offs, and production considerations arising from this ledger implementation. Does not restate the event stream or Part 1 rule text.
 
 ## 1. Append-only at scale
 
@@ -48,7 +48,7 @@ Part 1 leaves open-ended holds unimplemented (and Auth-B is rejected by availabl
 | No double-entry GL | Single-sided account ledger | Cannot prove balance to bank GL |
 | No idempotency keys | Deterministic fixture stream | Duplicate posts on retry |
 | Full-scan balances | Six-day toy window | Latency collapse at volume (§1) |
-| Interest capitalizes once at window end | Six-day assessment window | Mismatch vs continuous/period production schedules |
+| Interest capitalizes once at window end | Six-day problem window | Mismatch vs continuous/period production schedules |
 
 ---
 
