@@ -1,0 +1,19 @@
+{
+  "name": "account-ledger-core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "In-memory account ledger core — assessment",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --outDir dist --noEmit false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "replay": "npm run build && node dist/src/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}
