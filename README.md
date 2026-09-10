@@ -33,6 +33,16 @@ Output is per Day 1–6: closing ledger balances, overdraft fees, authorization 
 - **ERROR** — rejected operations (e.g. settlement of unknown Auth-Z)
 - **Interest capitalization** — single Day-6 credit equal to the sum of rounded daily accruals
 
+## Git (local)
+
+History was committed as 11 intact commits. If `git status` fails in this folder, attach history once:
+
+```bash
+zsh scripts/init-git.sh
+```
+
+(Cursor’s sandbox blocked writing `.git` under Documents; the script copies `/tmp/account-ledger-core.git` into place.)
+
 ## Docs
 
 | File | Purpose |

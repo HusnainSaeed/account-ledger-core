@@ -11,4 +11,5 @@ Timestamped work log for the assessment build.
 | 2026-09-10 23:50 | Stream E1–E10, `replay.ts`, `report.ts`, `main.ts` |
 | 2026-09-10 23:55 | Tests: money, replay, intentional `it.fails` rejected criterion |
 | 2026-09-11 00:05 | Docs: README, NUMBERS, AMBIGUITIES, REJECTED, ARCHITECTURE, WORKLOG |
-| 2026-09-11 00:10 | `npm install`, run suite + replay; local git commits (intact history) |
+| 2026-09-11 00:10 | `npm install`, suite green (15 tests), `npm run replay` OK |
+| 2026-09-11 00:35 | Local commits created at `/tmp/account-ledger-core.git` (11 commits). Documents `.git` is sandboxed — run `zsh scripts/init-git.sh` in Terminal to attach history |
