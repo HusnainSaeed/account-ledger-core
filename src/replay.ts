@@ -21,7 +21,7 @@ export interface ReplayResult {
 }
 
 /**
- * Replays the assessment stream (default E1–E10), then fees + interest.
+ * Replays the event stream (default E1–E10), then fees + interest.
  *
  * @param events - Ordered events; defaults to {@link EVENT_STREAM}
  * @returns Ledger, auths, and daily accruals after capitalization

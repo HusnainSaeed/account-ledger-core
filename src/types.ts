@@ -1,6 +1,6 @@
 /**
  * Shared domain types for the in-memory ledger.
- * Days are integers 1..6 to match the assessment window — not calendar dates.
+ * Days are integers 1..6 to match the problem window — not calendar dates.
  */
 
 export type Day = 1 | 2 | 3 | 4 | 5 | 6;
@@ -131,7 +131,7 @@ export const ACCOUNTS: Record<AccountId, AccountSpec> = {
   },
 };
 
-/** Overdraft fee is AED-denominated per the brief (25.00). */
+/** Overdraft fee is AED-denominated per the specification (25.00). */
 export const OVERDRAFT_FEE_AED_MINOR = 2500n;
 
 /**

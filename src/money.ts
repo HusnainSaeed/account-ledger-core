@@ -1,13 +1,13 @@
 /**
  * Fixed-scale money helpers.
  * Why bigint minor units: IEEE floats cannot represent 0.01 / 0.001 exactly;
- * ledger defenses fail on "where did the fils go?" if we use `number`.
+ * ledger checksums drift at fils scale if we use `number`.
  */
 
 import type { CurrencyCode, MinorUnits } from "./types.js";
 
 /**
- * Returns the decimal scale fixed by the brief (AED=2, BHD=3).
+ * Returns the decimal scale fixed by the specification (AED=2, BHD=3).
  *
  * @param currency - Account currency code
  * @returns Number of fractional digits

@@ -7,7 +7,7 @@
 import { parseMinor } from "./money.js";
 import type { StreamEvent } from "./types.js";
 
-/** Fixed fixture events for the assessment replay. */
+/** Fixed fixture events for the required replay. */
 export const EVENT_STREAM: readonly StreamEvent[] = [
   {
     id: "E1",

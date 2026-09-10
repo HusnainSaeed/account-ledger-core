@@ -39,7 +39,7 @@ function closingBeforeOdFee(ledger: Ledger, accountId: AccountId, day: Day): big
 /**
  * Assesses any missing OD fees for days 1..`throughDay`.
  * Loops until stable because booking a Day-2 fee changes later closes.
- * Only AED accounts receive the AED 25 fee per the brief.
+ * Only AED accounts receive the AED 25 fee per the specification.
  *
  * @param ledger - Append target for new fee rows
  * @param _auths - Reserved for future available/fee coupling; unused today

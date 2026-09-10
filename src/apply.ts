@@ -10,7 +10,7 @@ import { assessOverdraftFees } from "./policies/overdraft.js";
 import { type Day, type StreamEvent } from "./types.js";
 
 /**
- * Narrows a number to the assessment window day type.
+ * Narrows a number to the problem-window day type.
  *
  * @param n - Candidate day
  * @returns Day 1..6
