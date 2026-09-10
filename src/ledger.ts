@@ -82,23 +82,6 @@ export class Ledger {
   }
 
   /**
-   * Closing balance as of day D excluding overdraft fee rows.
-   * Models the “pre-fee close” used when deciding whether a day is negative
-   * and when stating closes before fee assessment.
-   *
-   * @param accountId - Account to total
-   * @param asOfDay - Inclusive value-date cutoff
-   * @returns Signed minor units without `OVERDRAFT_FEE` rows
-   */
-  balanceAsOfBeforeFees(accountId: AccountId, asOfDay: Day): MinorUnits {
-    return this.sumAsOf(
-      accountId,
-      asOfDay,
-      (e) => e.kind !== "OVERDRAFT_FEE",
-    );
-  }
-
-  /**
    * Shared summer for balance helpers: opening + filtered entries by value date.
    *
    * @param accountId - Account to total

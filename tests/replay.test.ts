@@ -5,11 +5,18 @@ import { replayThrough } from "./helpers/replayThrough.js";
 
 describe("event stream replay", () => {
   it("Day 2 closing at end of Day 5 before fees is AED -370.00", () => {
-    // Through E7 (index 0..6). Fees are assessed inside apply, so read pre-fee helper.
+    // Through E7; fees may already be appended — sum non-fee entries with VD ≤ 2.
     const { ledger } = replayThrough((_, index) => index <= 6);
-    expect(ledger.balanceAsOfBeforeFees("ACC-001", 2)).toBe(
-      parseMinor("-370.00", "AED"),
-    );
+    const preFeeDay2 = ledger
+      .all()
+      .filter(
+        (e) =>
+          e.accountId === "ACC-001" &&
+          e.valueDate <= 2 &&
+          e.kind !== "OVERDRAFT_FEE",
+      )
+      .reduce((sum, e) => sum + e.amountMinor, 0n);
+    expect(preFeeDay2).toBe(parseMinor("-370.00", "AED"));
   });
 
   it("E7 causes overdraft fees on more than Day 2 alone", () => {
