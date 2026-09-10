@@ -50,16 +50,6 @@ export class Ledger {
   }
 
   /**
-   * Finds an entry by `ref` or by `id` (used for settlement/auth linkage).
-   *
-   * @param ref - Reference string
-   * @returns First matching entry, if any
-   */
-  findByRef(ref: string): LedgerEntry | undefined {
-    return this.entries.find((e) => e.ref === ref || e.id === ref);
-  }
-
-  /**
    * Closing ledger balance as of day D:
    * opening + sum(entries with `value_date <= D`).
    * Holds are excluded — they are not ledger entries.
@@ -131,19 +121,6 @@ export class Ledger {
       }
     }
     return sum;
-  }
-
-  /**
-   * @returns Highest `bookedOn` in the log, or 0 if empty
-   */
-  maxBookedOn(): number {
-    let max = 0;
-    for (const e of this.entries) {
-      if (e.bookedOn > max) {
-        max = e.bookedOn;
-      }
-    }
-    return max;
   }
 
   /**

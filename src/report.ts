@@ -4,7 +4,7 @@
 
 import { formatMinor } from "./money.js";
 import type { ReplayResult } from "./replay.js";
-import { ACCOUNTS, WINDOW_DAYS, type AccountId, type Day } from "./types.js";
+import { ACCOUNTS, WINDOW_DAYS, type AccountId } from "./types.js";
 
 /**
  * Builds the Day 1–6 text report: closes, fees, auths, errors, interest, entry log.
@@ -106,20 +106,4 @@ export function formatDayReport(result: ReplayResult): string {
   }
 
   return lines.join("\n");
-}
-
-/**
- * Convenience for tests: ledger close including all entry kinds for a day.
- *
- * @param result - Replay result
- * @param accountId - Account
- * @param day - Value-date cutoff
- * @returns Closing minor units via {@link Ledger.balanceAsOf}
- */
-export function closingOn(
-  result: ReplayResult,
-  accountId: AccountId,
-  day: Day,
-): bigint {
-  return result.ledger.balanceAsOf(accountId, day);
 }
