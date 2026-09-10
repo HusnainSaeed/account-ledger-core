@@ -30,6 +30,7 @@ In code today an auth is active until settled (or never approved). Production mu
 | Expiry / TTL | Card auth not captured in scheme window | Auto-release hold; append `AUTH_EXPIRED`; available ↑; no debit |
 | Merchant void / reverse | Merchant cancels pre-auth | `AUTH_RELEASE`; release hold; no debit |
 | Partial capture then close | Capture < hold (our Auth-A shape) | Debit capture; **release entire** remaining hold |
+| Over-capture (`settle > hold`) | Merchant captures above the reserved hold | **Not implemented** here (stream never does this). Mandate: reject, or require incremental auth first; if scheme allows over-capture, check available for the excess and error when insufficient. Detail: AMBIGUITIES.md §4b |
 | Incremental replace | Hotel/car rental top-up | Replace hold amount only if available allows; else reject |
 | Force clear / ops | Fraud, stuck hold, chargeback prep | Privileged `AUTH_FORCE_RELEASE` with audit; never silent delete |
 | Account closure | Close requested while hold open | Block closure until holds clear, or force-release under policy then close |
