@@ -16,7 +16,7 @@ Keep append-only semantics; add **per-account daily balance checkpoints** (or a 
 ## 2. Value-dated entries in production (UAE-licensed bank)
 
 **Operational / regulatory surface this design creates**  
-A booking day ≠ value date means historical closes can move after the fact. In this codebase that immediately restates OD fees and interest. In a UAE-licensed bank that surface includes: customer statement restatements and complaints; profit/interest recognition timing; CBUAE / regulatory reporting cutoffs that assumed a closed day; AML transaction monitoring where economic date and posting date diverge; ops dispute handling when a fee appears “for a past day” after a later backdated post.
+A booking day ≠ value date means historical closes can move after the fact. In this codebase that immediately restates OD fees and interest (including after corrective / reversing entries that share an earlier value date). In a UAE-licensed bank that surface includes: customer statement restatements and complaints; profit/interest recognition timing; CBUAE / regulatory reporting cutoffs that assumed a closed day; AML transaction monitoring where economic date and posting date diverge; ops dispute handling when a fee appears “for a past day” after a later backdated post.
 
 **One control before go-live**  
 **Maker-checker plus a hard backdating window:** value dates may not land earlier than N business days or into a closed GL period without a second approver; immutable audit of who authorized the backdate; auto-generated fees/interest from backdates queued for review before customer-visible release.
