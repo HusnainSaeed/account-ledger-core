@@ -1,57 +1,114 @@
 # Architecture & Trade-offs
 
-Architecture decisions, trade-offs, and production considerations arising from this ledger implementation.
+Decisions and production trade-offs from this in-memory ledger core.
 
 ## 1. Append-only at scale
 
-**What breaks first at ~100× volume?**  
-Balance-as-of and overdraft re-scans walk the full in-memory entry array (`O(entries)` per query). After backdated posts we may rescan the whole day window repeatedly. At 100× event volume on this shape, **CPU/latency** fails before heap exhaustion — every auth check and fee pass gets slower with log length. At larger multi-account 100×, the **unbounded in-memory entry list** (plus holds and error log) is the hard memory ceiling.
+### What breaks first at ~100× volume?
 
-**Where unbounded state accumulates**  
-The append-only ledger array, the authorization map, and the error list are retained for the process lifetime. We recompute projections; we do not store daily balances, so cost grows with history length.
+Two things fail in order:
 
-**Cheapest structural change that defers the problem**  
-Keep append-only semantics; add **per-account daily balance checkpoints** (or a value-date bucket prefix structure) updated on append. `balanceAsOf(day)` becomes O(1)/O(log n) against checkpoints instead of a full scan. Optionally tier cold entries to disk while hot checkpoints stay resident. No change to event meaning.
+1. **Latency** — every balance and overdraft check scans the full entry list (`O(n)` per query). Backdated posts make that worse because we re-scan many days after each change.
+2. **Memory** — the entry log, hold map, and error list all grow without bound in process RAM.
 
-## 2. Value-dated entries in production (UAE-licensed bank)
+On a small single-process core, **CPU/latency usually hurts before out-of-memory**.
 
-**Operational / regulatory surface this design creates**  
-A booking day ≠ value date means historical closes can move after the fact. In this codebase that immediately restates OD fees and interest (including after corrective / reversing entries that share an earlier value date). In a UAE-licensed bank that surface includes: customer statement restatements and complaints; profit/interest recognition timing; CBUAE / regulatory reporting cutoffs that assumed a closed day; AML transaction monitoring where economic date and posting date diverge; ops dispute handling when a fee appears “for a past day” after a later backdated post.
+### Where unbounded state accumulates
 
-**One control before go-live**  
-**Maker-checker plus a hard backdating window:** value dates may not land earlier than N business days or into a closed GL period without a second approver; immutable audit of who authorized the backdate; auto-generated fees/interest from backdates queued for review before customer-visible release.
+| Structure | What it holds |
+|-----------|----------------|
+| Ledger entry array | Every money movement (never deleted) |
+| Authorization map | Holds by auth id |
+| Error log | Rejected operations |
 
-## 3. Authorization lifecycle — endings other than matching settlement
+Balances are **recomputed** from the log. We do not keep daily snapshots, so cost rises with history length.
 
-In this implementation an authorization is active until settled (or never approved). Production must define every other ending:
+### Cheapest fix that keeps the same semantics
 
-| Ending | Real-world scenario | Mandated behaviour |
-|--------|---------------------|--------------------|
-| Expiry / TTL | Card auth not captured in scheme window | Auto-release hold; append `AUTH_EXPIRED`; available ↑; no debit |
-| Merchant void / reverse | Merchant cancels pre-auth | `AUTH_RELEASE`; release hold; no debit |
-| Partial capture then close | Capture < hold (Auth-A shape) | Debit capture; **release entire** remaining hold |
-| Over-capture (`settle > hold`) | Merchant captures above the reserved hold | Out of scope in this build. Production mandate: reject, or require incremental auth first; if the scheme allows over-capture, check available for the excess and error when insufficient. See AMBIGUITIES.md §4b |
-| Incremental replace | Hotel/car rental top-up | Replace hold amount only if available allows; else reject |
-| Force clear / ops | Fraud, stuck hold, chargeback prep | Privileged `AUTH_FORCE_RELEASE` with audit; never silent delete |
-| Account closure | Close requested while hold open | Block closure until holds clear, or force-release under policy then close |
+Do **not** change append-only rules. Add a cheap index:
 
-Open-ended holds (no expiry/void path) and Auth-B’s rejection under available-balance rules after a backdated debit are deliberate scope cuts — not a claim that open holds are safe in production.
+- **Per-account daily balance checkpoints** (or value-date buckets) updated on each append
+- Then `balanceAsOf(day)` is roughly **O(1)** / **O(log n)** instead of a full scan
+- Optionally move old entries to disk and keep checkpoints hot in memory
 
-## 4. What you cut and why
-
-| Cut | Why | Production risk deferred |
-|-----|-----|--------------------------|
-| No persistence / single process | In-memory core only | Restart loses the ledger; no durability/HA |
-| No concurrency control | Single-threaded replay | Parallel auth races on available balance |
-| No FX / cross-currency | Accounts are single-currency | Cross-currency auth/settle undefined |
-| No fee cascade on reversal | Append-only honesty; reversal ≠ fee delete | Customer may keep OD fees after correcting debit |
-| No auth expiry/void in code | Lifecycle limited to approve / settle / leave open | Stuck holds starve available |
-| No `settle > hold` guard / excess-available check | Only settle ≤ hold is exercised | Over-capture could debit unreserved funds without an error |
-| No double-entry GL | Single-sided account ledger | Cannot prove balance to bank GL |
-| No idempotency keys | Deterministic local fixture stream | Duplicate posts on retry |
-| Full-scan balances | Small demonstration window | Latency collapse at volume (§1) |
-| Interest capitalizes once at window end | Fixed short window | Mismatch vs continuous/period production schedules |
+Same events and meanings; only the lookup path changes.
 
 ---
 
-Every claim above maps to this repository: scans in `ledger.ts` / `policies/overdraft.ts`, holds in `authorizations.ts`, cuts visible as absent modules (no DB, no TTL worker, no GL).
+## 2. Value-dated entries in production (UAE-licensed bank)
+
+### What value dates create operationally
+
+`bookedOn` and `valueDate` can differ. When they do, **past closing balances can change after the fact**.
+
+In this codebase that immediately:
+
+- Reassesses overdraft fees on affected days
+- Restates daily interest (including after corrective / reversing entries with an earlier value date)
+
+In a UAE-licensed bank, that same behaviour shows up as:
+
+- Customer statement restatements and complaints
+- Shifted profit / interest recognition
+- Risk to CBUAE (and other) reports that assumed a day was closed
+- Harder AML monitoring when economic date ≠ posting date
+- Disputes when a fee appears “for a past day” after a later backdated post
+
+### One control before go-live
+
+**Maker-checker + hard backdating window**
+
+- Value date cannot go earlier than **N business days**, and cannot enter a **closed GL period**, without a second approver
+- Keep an **immutable audit** of who authorized the backdate
+- Queue auto-generated fees/interest from backdates for **review** before they are customer-visible
+
+---
+
+## 3. Authorization lifecycle — endings other than matching settlement
+
+Today an auth is either:
+
+- **Approved** → active hold, or
+- **Settled** → hold released and a debit posted, or
+- **Never approved** (e.g. insufficient available)
+
+Production needs explicit endings beyond “matching settlement”:
+
+| Ending | Real-world case | Required system behaviour |
+|--------|-----------------|---------------------------|
+| **Expiry / TTL** | Card auth not captured in time | Release hold; record `AUTH_EXPIRED`; available goes up; **no** debit |
+| **Merchant void** | Merchant cancels the pre-auth | Release hold (`AUTH_RELEASE`); **no** debit |
+| **Partial capture** | Capture < hold (Auth-A: 185 on 200) | Debit the capture amount; **release the whole** remaining hold |
+| **Over-capture** | Capture > hold | **Out of scope here.** Prefer reject or incremental auth first. If allowed, check available for the excess and error if it would not clear. See AMBIGUITIES.md §4b |
+| **Incremental replace** | Hotel / car rental top-up | Raise or replace hold only if available allows; else reject |
+| **Ops force-release** | Fraud, stuck hold, chargeback prep | Privileged `AUTH_FORCE_RELEASE` with audit — never silent delete |
+| **Account closure** | Close while a hold is open | Block close until holds clear, or force-release under policy then close |
+
+**Scope note:** this build has no expiry/void path. Auth-B is rejected when available would go negative after a backdated debit. Those are cuts, not production recommendations.
+
+---
+
+## 4. What you cut and why
+
+| What we cut | Why (this core) | Risk if left as-is in production |
+|-------------|-----------------|----------------------------------|
+| Persistence / multi-process HA | In-memory only by design | Restart loses the ledger |
+| Concurrency / locking | Single-threaded replay | Parallel auths can race on available balance |
+| FX / cross-currency | One currency per account | Cross-currency auth/settle undefined |
+| Fee reversal when a debit reverses | Append-only; reversal does not cascade to fees | Customer may keep OD fees after a correcting entry |
+| Auth expiry / void | Only approve → settle (or leave open) | Stuck holds reduce available forever |
+| `settle > hold` guard + excess available check | Only settle ≤ hold is exercised | Over-capture can debit unreserved funds with no error |
+| Double-entry GL | Single-sided account ledger | Cannot prove the book to bank GL |
+| Idempotency keys | Deterministic local fixtures | Retries can double-post |
+| Indexed / checkpoint balances | Tiny window; full scan is fine | Latency collapses at volume (see §1) |
+| Continuous interest posting | One capitalization at window end | Does not match real period-end schedules |
+
+---
+
+## Traceability
+
+These claims map to the code:
+
+- Full-scan balances → `ledger.ts`, `policies/overdraft.ts`
+- Holds / available → `authorizations.ts`
+- Missing DB, TTL worker, GL, etc. → absent modules (intentional cuts)
