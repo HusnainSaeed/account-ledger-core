@@ -38,7 +38,7 @@ Specification gaps found during implementation, and how each was resolved in thi
 
 **Related concern:** If over-settlement were allowed, the excess (`settle − hold`) is unreserved spend. Available would need a fresh check after releasing the hold (or against ledger − other holds) before debiting the excess; insufficient available should surface an error rather than silently overdrawing via settlement.
 
-**Resolution (scope):** The mandatory stream only exercises **settle ≤ hold** (Auth-A). No over-settlement event is specified. This implementation does **not** add a `settle > hold` guard or an excess-available check — implementing either would be inventing product policy beyond the brief.
+**Resolution (scope):** Only **settle ≤ hold** is exercised (Auth-A). No over-settlement case is provided. This implementation does **not** add a `settle > hold` guard or an excess-available check — either would invent product policy beyond what is specified.
 
 **Production stance (documented, not coded):** Prefer reject (`SETTLEMENT_EXCEEDS_HOLD`) or require incremental auth to raise the hold, then settle. If a scheme truly allows over-capture, gate the excess on available and error when it would not clear. See also ARCHITECTURE.md cuts.
 
