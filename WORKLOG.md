@@ -15,3 +15,4 @@ Timestamped work log.
 | 2026-09-11 | Document `settle > hold` / excess-available as scoped ambiguities + ARCHITECTURE cuts |
 | 2026-09-11 | Remove local git-attach helper from the repo |
 | 2026-09-11 | Publish public GitHub repo `HusnainSaeed/account-ledger-core` |
+| 2026-09-11 | Add Part 2 PDF: `docs/Architecture_and_Tradeoffs.pdf` |
