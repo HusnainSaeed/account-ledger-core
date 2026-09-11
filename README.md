@@ -39,6 +39,5 @@ Output is per Day 1–6: closing ledger balances, overdraft fees, authorization 
 | `NUMBERS.md` | Constants and rationale |
 | `AMBIGUITIES.md` | Specification gaps and resolutions |
 | `REJECTED.md` | Refused acceptance criteria and abandoned approaches |
-| `ARCHITECTURE.md` | Part 2 trade-offs (markdown source) |
-| `docs/Architecture_and_Tradeoffs.pdf` | Part 2 Architecture & Trade-offs document (PDF) |
+| `ARCHITECTURE.md` | Part 2 trade-offs and production considerations |
 | `WORKLOG.md` | Timestamped work log |
